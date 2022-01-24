@@ -7,13 +7,30 @@ svd.register('JSMicroLedger', 'OrderBPS', {
     },
     order: function(forDID){
         this.callSignedBy(this.customerDID);
-        this. state = 'ordered';  this.shopDID = forDID;
+        this.state = 'ordered';
+        this.shopDID = forDID;
     },
     fulfill: function(){
         this.callSignedBy(this.shopDID);
         this.state = 'fulfilled';
     }
 });
+
+svd.setDIDResolver(function(did){
+    return {
+        sign: function(hashOfdataToBeSigned){
+            return JSON.stringify({"signedBy":did, data:hashOfdataToBeSigned})
+        },
+        verify: function(hashOfdataToBeSigned, did, signature){
+            let s = JSON.parse(signature)
+            return s.signedBy == did && s.data == hashOfdataToBeSigned;
+        },
+        hash: function(data){
+            return "DATAHASH";
+        }
+    }
+})
+
 
 let myDID   ="did:test:myDID";
 let shopDID ="did:test:shopDID";

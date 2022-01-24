@@ -1,6 +1,7 @@
 
 let svdRegistry = {};
 let svdPrototypeRegistry = {};
+let globalDIDResolver;
 
  let thisModule = {
     registerPrototype: function(svdPrototype, ctor){
@@ -13,23 +14,26 @@ let svdPrototypeRegistry = {};
         }
         svdRegistry[newName] = protoCtor(newName, description);
     },
-    load: function(svdName, ...args){
+    load: function(svdName, asDID, ...args){
         let ctor = svdRegistry[svdName];
         if(typeof ctor !== "function"){
             throw "Failed to create a new ctor with SVD type  " + svdName;
         }
-        let svd = new ctor();
+        let svd = new ctor(globalDIDResolver, asDID);
         svd.onLoadSVD(...args);
         return svd;
     },
-    create: function(svdName, ...args){
+    create: function(svdName, asDID, ...args){
         let ctor = svdRegistry[svdName];
         if(typeof ctor !== "function"){
             throw "Failed to create a new ctor with SVD type " + svdName;
         }
-         let svd = new ctor( );
+         let svd = new ctor( globalDIDResolver, asDID);
          svd.onNewSVD(...args);
          return svd;
+     },
+     setDIDResolver: function(resolver){
+         globalDIDResolver = resolver;
      }
 }
 

@@ -1,5 +1,8 @@
 module.exports.JSMicroLedgerProtoCtor = function(name, description){
-    return function(){
+    return function(resolver, asDID){
+        let currentIdentity = resolver(asDID);
+        let currentBlock = [];
+
         this.onNewSVD =  function(){
 
         }
@@ -21,16 +24,16 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description){
 
         }
 
-        for(let fn in description){
-            if(typeof this[fn] === "undefined"){
-                this[fn] = description[fn].bind(this);
-            } else {
-                    throw "Refusing to overwrite member " + fn + " from description. SVD type ducking failed!";
-            }
+        this.callSignedBy = function(){
+
         }
 
-        let mixin = require("../interfaces/svdMixin");;
-        mixin.svdMixin(this);
+        this.pushCmd = function(cmd){
+            currentBlock.push(cmd);
+        }
+
+        let mixin = require("./MicroLedgerMixin.js");
+        mixin.enhance(currentIdentity, this, description);
         return this;
     }
 }
