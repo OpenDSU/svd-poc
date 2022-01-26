@@ -7,28 +7,28 @@ let globalDIDResolver;
     registerPrototype: function(svdPrototype, ctor){
         svdPrototypeRegistry[svdPrototype] = ctor;
     },
-    register: function(svdPrototype, newName, description){
+    register: function(svdPrototype, newName, description, persistence){
         let protoCtor = svdPrototypeRegistry[svdPrototype];
         if(typeof protoCtor !== "function"){
             throw "Failed to lookup for  svd prototype " + svdPrototype + " while creating SVD type " +  newName;
         }
-        svdRegistry[newName] = protoCtor(newName, description);
+        svdRegistry[newName] = protoCtor(newName, description, persistence);
     },
-    load: function(svdName, asDID, ...args){
+    load: function(svdName, asDID, svdID, ...args){
         let ctor = svdRegistry[svdName];
         if(typeof ctor !== "function"){
             throw "Failed to create a new ctor with SVD type  " + svdName;
         }
-        let svd = new ctor(globalDIDResolver, asDID);
+        let svd = new ctor(globalDIDResolver, asDID, svdID);
         svd.onLoadSVD(...args);
         return svd;
     },
-    create: function(svdName, asDID, ...args){
+    create: function(svdName, asDID, svdID, ...args){
         let ctor = svdRegistry[svdName];
         if(typeof ctor !== "function"){
             throw "Failed to create a new ctor with SVD type " + svdName;
         }
-         let svd = new ctor( globalDIDResolver, asDID);
+         let svd = new ctor( globalDIDResolver, asDID, svdID);
          svd.onNewSVD(...args);
          return svd;
      },

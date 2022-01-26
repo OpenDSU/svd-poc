@@ -1,7 +1,63 @@
 let svd = require("../../src/index.js");
 
+/********************************* Example of environment preparations ***********************************/
+
+let __memoryPersistence = {};
+
+let mockPersistence = {
+    loadCommands:function(svdID, callback){
+        let blocks = __memoryPersistence[svdID];
+        if(!blocks){
+            blocks = [];
+            __memoryPersistence[svdID] = blocks;
+        }
+
+        let cmnds = [];
+
+        blocks.forEach( b => {
+            let parsedBlock = JSON.parse(b);
+            parsedBlock.forEach( c => {
+                cmnds.push(c);
+            })
+        })
+
+        callback(undefined, cmnds);
+    },
+    addBlock:function(svdID, block, callback){
+        if(!__memoryPersistence[svdID]){
+            __memoryPersistence[svdID] = [];
+        }
+        __memoryPersistence[svdID].push(JSON.stringify(block));
+
+        if(callback) {
+            callback(undefined, block);
+        }
+    }
+}
+
+svd.setDIDResolver(function(did){
+    return {
+        sign: function(hashOfdataToBeSigned){
+            return JSON.stringify({"signedBy":did, hash:hashOfdataToBeSigned});
+        },
+        verify: function(hashOfdataToBeSigned,signature){
+            let s = JSON.parse(signature);
+            if(s.signedBy != did || s.hash != hashOfdataToBeSigned){
+                return false;
+            };
+            return true;
+        },
+        hash: function(data){
+            return "#"+data["#"];
+        }
+    }
+})
+
+
+/********************************* Actual code ***********************************/
+
 svd.register('JSMicroLedger', 'OrderBPS', {
-    ctor: function(creatorDID){
+    ctor: function(creatorDID, vsdId){
         this.state = 'created';
         this.customerDID = creatorDID
     },
@@ -14,34 +70,21 @@ svd.register('JSMicroLedger', 'OrderBPS', {
         this.callSignedBy(this.shopDID);
         this.state = 'fulfilled';
     }
-});
-
-svd.setDIDResolver(function(did){
-    return {
-        sign: function(hashOfdataToBeSigned){
-            return JSON.stringify({"signedBy":did, data:hashOfdataToBeSigned})
-        },
-        verify: function(hashOfdataToBeSigned, did, signature){
-            let s = JSON.parse(signature)
-            return s.signedBy == did && s.data == hashOfdataToBeSigned;
-        },
-        hash: function(data){
-            return "DATAHASH";
-        }
-    }
-})
+}, mockPersistence);
 
 
-let myDID   ="did:test:myDID";
-let shopDID ="did:test:shopDID";
 
-let p1 = svd.create('OrderBPS', myDID);
+let currentDID   = "did:test:myDID";
+let shopDID      = "did:test:shopDID";
+let processID    = "process_id#12345";
+
+let p1 = svd.create('OrderBPS', currentDID, processID);
 p1.order(shopDID);
 p1.save();
-console.log(p1.svdID(), ":", p1.dump()); // prints the processID
+console.log("First DUMP:", p1.getID(), "  has state ", p1.dump(), __memoryPersistence);
 
-let p2 = svd.load('OrderBPS',  myDID, p1.svdID);
+let p2 = svd.load('OrderBPS',  shopDID, processID);
 p2.fulfill();
 p2.save();
 
-console.log(p2.svdID(), ":", p2.dump()); // prints the processID
+console.log("Second DUMP:", p2.getID(), " has state", p2.dump(), __memoryPersistence);
