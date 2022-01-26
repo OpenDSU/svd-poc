@@ -51,7 +51,7 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             let anyVerified = false;
             for(let i = 0; i < arr.length; i++){
                 anyVerified = verifyForDID(arr[i], cloneCmd, cmdSignature);
-                console.log(">>>>>>>>",anyVerified, arr[i], "#"+cloneCmd["#"], cmdSignature);
+                //console.log(">>>>>>>>",anyVerified, arr[i], "#"+cloneCmd["#"], cmdSignature);
                 if(anyVerified) return true;
             }
 
@@ -110,14 +110,17 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             c.signature  = sign;
         }
 
-
         this.__setCurrentCmd = function(c){
-            __currentCmd = c;
+            if(c && !c.cmdType.startsWith("__")){
+                __currentCmd = c;
+            }
         }
 
         this.__pushCmd = function(cmd){
-            currentBlock.push(cmd);
-            __lastCmd = cmd;
+            if(cmd && !cmd.cmdType.startsWith("__")){
+                currentBlock.push(cmd);
+                __lastCmd = cmd;
+            }
         }
 
         let mixin = require("./MicroLedgerMixin.js");

@@ -41,6 +41,7 @@ svd.setDIDResolver(function(did){
             return JSON.stringify({"signedBy":did, hash:hashOfdataToBeSigned});
         },
         verify: function(hashOfdataToBeSigned,signature){
+            //console.log("!!!!!", did, hashOfdataToBeSigned,signature)
             let s = JSON.parse(signature);
             if(s.signedBy != did || s.hash != hashOfdataToBeSigned){
                 return false;
@@ -55,9 +56,9 @@ svd.setDIDResolver(function(did){
 
 
 /********************************* Actual code ***********************************/
-const DID_CREATED   = 'created';
-const DID_READY      = 'ready';
-const DID_REVOKED   = 'revoked';
+const DID_CREATED       = 'created';
+const DID_READY         = 'ready';
+const DID_REVOKED       = 'revoked';
 
 
 svd.register('JSMicroLedger', 'DIDMethodDemo', {
@@ -86,22 +87,22 @@ svd.register('JSMicroLedger', 'DIDMethodDemo', {
     },
     __sign: function(value){
         if(this.state != DID_READY){
-            throw new Error("SVD can't be used");
+            throw new Error("Sorry! DID was revoked and can't be used for signing!");
         }
-        return this.resolve(this.controlDID).sign(value);
+        return this.resolveDID(this.controlDID).sign(value);
     },
-    __verify: function(signature){
+    __verify: function(data, signature){
         if(this.state != DID_READY){
             return false;
         }
-        return this.resolve(this.controlDID).verify(signature);
+        return this.resolveDID(this.controlDID).verify(data, signature);
     },
 }, mockPersistence);
 
-let keyDID1   = "did:key:key1";
-let recoveryKeyDID1   = "did:key:rkey1";
-let recoveryKeyDID2   = "did:key:rkey2";
-let keyDID2   = "did:key:key2";
+let keyDID1             = "did:key:key1";
+let recoveryKeyDID1     = "did:key:rkey1";
+let recoveryKeyDID2     = "did:key:rkey2";
+let keyDID2             = "did:key:key2";
 
 let did_v1 = svd.create('DIDMethodDemo', keyDID1, keyDID1);
 did_v1.setRecoveryDID(recoveryKeyDID1);
@@ -116,6 +117,9 @@ console.log("Second DUMP:", did_v2.getID(), " has state", did_v2.dump(), __memor
 
 
 let did_v3 = svd.load('DIDMethodDemo',  recoveryKeyDID2, keyDID1);
+console.log(did_v3.__verify("testData", did_v3.__sign("testData")));
 did_v3.revoke();
 did_v3.save();
-console.log("Second DUMP:", did_v3.getID(), " has state", did_v3.dump(), __memoryPersistence);
+console.log("Third DUMP:", did_v3.getID(), " has state", did_v3.dump(), __memoryPersistence);
+
+console.log(did_v3.__verify("testData", did_v3.__sign("testData")));

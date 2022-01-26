@@ -9,6 +9,7 @@ module.exports.enhance = function(host, description){
         }
 
         return function(...args){
+            let result;
             if(host.__getReplayMode() === "notInitialised"){
                 pushCmd(args);
             }
@@ -18,13 +19,14 @@ module.exports.enhance = function(host, description){
                 } else {
                     host.__setCurrentCmd(pushCmd(args))
                     try{
-                        f(...args);
+                        result=  f(...args);
                     } catch(err){
-                     console.log("Unexpected error", err);
+                        console.log("Unexpected error", err);
                     }
                     host.__setCurrentCmd(undefined);
                 }
             }
+            return result;
         }
     }
 
