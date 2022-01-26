@@ -3,17 +3,17 @@ module.exports.enhance = function(host, description){
     function createCommandFunction(fn, f){
         function pushCmd(args){
             let cmd = {cmdType:fn, cmdArgs:args};
-            host.chainCommand(cmd);
-            host.pushCmd(cmd);
+            host.__chainCommand(cmd);
+            host.__pushCmd(cmd);
             return cmd;
         }
 
         return function(...args){
-            if(host.getReplayMode() === "notInitialised"){
+            if(host.__getReplayMode() === "notInitialised"){
                 pushCmd(args);
             }
             else {
-                if(host.getReplayMode()){
+                if(host.__getReplayMode()){
                     f(...args);
                 } else {
                     host.__setCurrentCmd(pushCmd(args))

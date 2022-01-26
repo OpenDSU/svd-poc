@@ -20,7 +20,7 @@ let globalDIDResolver;
             throw "Failed to create a new ctor with SVD type  " + svdName;
         }
         let svd = new ctor(globalDIDResolver, asDID, svdID);
-        svd.onLoadSVD(...args);
+        svd._onLoadSVD(...args);
         return svd;
     },
     create: function(svdName, asDID, svdID, ...args){
@@ -29,7 +29,7 @@ let globalDIDResolver;
             throw "Failed to create a new ctor with SVD type " + svdName;
         }
          let svd = new ctor( globalDIDResolver, asDID, svdID);
-         svd.onNewSVD(...args);
+         svd._onNewSVD(...args);
          return svd;
      },
      setDIDResolver: function(resolver){
