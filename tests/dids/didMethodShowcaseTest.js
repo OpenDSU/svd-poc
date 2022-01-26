@@ -85,13 +85,13 @@ svd.register('JSMicroLedger', 'DIDMethodDemo', {
         this.callSignedByAny([this.recoveryDID,this.controlDID]);
         this.controlDID = newKeyDID;
     },
-    __sign: function(value){
+    sign: function(value){
         if(this.state != DID_READY){
             throw new Error("Sorry! DID was revoked and can't be used for signing!");
         }
         return this.resolveDID(this.controlDID).sign(value);
     },
-    __verify: function(data, signature){
+    verify: function(data, signature){
         if(this.state != DID_READY){
             return false;
         }
@@ -106,6 +106,7 @@ let keyDID2             = "did:key:key2";
 
 let did_v1 = svd.create('DIDMethodDemo', keyDID1, keyDID1);
 did_v1.setRecoveryDID(recoveryKeyDID1);
+console.log("DID used for verifing a singature:", did_v1.verify("testData", did_v1.sign("testData")));
 did_v1.save();
 console.log("First DUMP:", did_v1.getID(), "  has state ", did_v1.dump(), __memoryPersistence);
 
@@ -117,9 +118,8 @@ console.log("Second DUMP:", did_v2.getID(), " has state", did_v2.dump(), __memor
 
 
 let did_v3 = svd.load('DIDMethodDemo',  recoveryKeyDID2, keyDID1);
-console.log(did_v3.__verify("testData", did_v3.__sign("testData")));
 did_v3.revoke();
 did_v3.save();
 console.log("Third DUMP:", did_v3.getID(), " has state", did_v3.dump(), __memoryPersistence);
 
-console.log(did_v3.__verify("testData", did_v3.__sign("testData")));
+//console.log(did_v3.__verify("testData", did_v3.__sign("testData")));
