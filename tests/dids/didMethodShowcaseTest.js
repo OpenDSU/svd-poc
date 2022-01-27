@@ -43,9 +43,9 @@ svd.setDIDResolver(function(did){
         verify: function(hashOfdataToBeSigned,signature){
             //console.log("!!!!!", did, hashOfdataToBeSigned,signature)
             let s = JSON.parse(signature);
-            if(s.signedBy != did || s.hash != hashOfdataToBeSigned){
+            if(s.signedBy !== did || s.hash !== hashOfdataToBeSigned){
                 return false;
-            };
+            }
             return true;
         },
         hash: function(data){
@@ -65,6 +65,7 @@ svd.register('JSMicroLedger', 'DIDMethodDemo', {
     ctor: function(ownerDID, vsdID){
         this.controlDID = ownerDID
         this.state = DID_CREATED;
+        this.recoveryDID = null;
     },
     setRecoveryDID: function(newRecoveryDID){
         if(this.recoveryDID){
@@ -85,14 +86,14 @@ svd.register('JSMicroLedger', 'DIDMethodDemo', {
         this.callSignedByAny([this.recoveryDID,this.controlDID]);
         this.controlDID = newKeyDID;
     },
-    __sign: function(value){
-        if(this.state != DID_READY){
+    $sign: function(value){  /* do not add commands in history (prefixed with $) */
+        if(this.state !== DID_READY){
             throw new Error("Sorry! DID was revoked and can't be used for signing!");
         }
         return this.resolveDID(this.controlDID).sign(value);
     },
-    __verify: function(data, signature){
-        if(this.state != DID_READY){
+    $verify: function(data, signature){  /* do not add commands in history (prefixed with $) */
+        if(this.state !== DID_READY){
             return false;
         }
         return this.resolveDID(this.controlDID).verify(data, signature);
@@ -106,20 +107,21 @@ let keyDID2             = "did:key:key2";
 
 let did_v1 = svd.create('DIDMethodDemo', keyDID1, keyDID1);
 did_v1.setRecoveryDID(recoveryKeyDID1);
-console.log("DID used for verifing a singature:", did_v1.__verify("testData", did_v1.__sign("testData")));
+console.log("DID used for verifing a singature:", did_v1.$verify("testData", did_v1.$sign("testData")));
 did_v1.save();
-console.log("First DUMP:", did_v1.getID(), "  has state ", did_v1.dump(), __memoryPersistence);
+
+console.log("First DUMP:", did_v1.getID(), "  has state ", did_v1.dump()," and ", did_v1.history(true));
 
 let did_v2 = svd.load('DIDMethodDemo',  recoveryKeyDID1, keyDID1);
 did_v2.rotate(recoveryKeyDID2);
 did_v2.setRecoveryDID(recoveryKeyDID2);
 did_v2.save();
-console.log("Second DUMP:", did_v2.getID(), " has state", did_v2.dump(), __memoryPersistence);
+console.log("Second DUMP:", did_v2.getID(), " has state", did_v2.dump(), " and ", did_v2.history(true));
 
 
 let did_v3 = svd.load('DIDMethodDemo',  recoveryKeyDID2, keyDID1);
 did_v3.revoke();
 did_v3.save();
-console.log("Third DUMP:", did_v3.getID(), " has state", did_v3.dump(), __memoryPersistence);
+console.log("Third DUMP:", did_v3.getID(), " has state", did_v3.dump(), " and ", did_v3.history(true));
 
 //console.log(did_v3.__verify("testData", did_v3.__sign("testData")));

@@ -1,3 +1,5 @@
+const UTILITY_FUNCTION_PREFIX = "$";
+
 module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence){
     return function(resolver, asDID, svdID){
         let currentIdentity = resolver(asDID);
@@ -6,9 +8,15 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
         let __replayMode = "notInitialised";
         let __lastCmd = null;
         let __currentCmd = null;
+        let __cmndsHistory = [];
 
         /* -------------------------------------------- Public methods that have to be documented --------------------------------------------*/
         this.save = function(){
+
+            currentBlock.forEach( c => {
+                __cmndsHistory.push(c);
+            })
+
             persistence.addBlock(svdID, currentBlock, (err, res) => {
                 if(err) {
                     throw err;
@@ -19,6 +27,25 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
 
         this.dump = function(){
             return JSON.stringify(self);
+        }
+
+        this.history = function(asString){  /*if !asString than return a JSON*/
+            let blockNumber = 1;
+            if(asString){
+                let res = "Commands History:\n";
+                __cmndsHistory.forEach(block => {
+                    res += "\tCommand#" + blockNumber ;
+                    res +=  JSON.stringify(block, null, " \t");
+                    /*if(block) block.forEach(cmd => {
+                        res += JSON.stringify(cmd, null, '\t') + "\n";
+                    })*/
+                    res +="\n"
+                    blockNumber++;
+                })
+                res +="\n";
+                return res;
+            }
+            return JSON.stringify(__cmndsHistory);
         }
 
         this.getID = function(){
@@ -76,6 +103,7 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
 
         this._onLoadSVD =  function(){
             persistence.loadCommands(svdID, (err, cmnds) => {
+                __cmndsHistory = cmnds;
                 __replayMode = true;
                 if(cmnds.length >0){
                     cmnds.forEach( c => {
@@ -111,13 +139,13 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
         }
 
         this.__setCurrentCmd = function(c){
-            if(c && !c.cmdType.startsWith("__")){
+            if(c && !c.cmdType.startsWith(UTILITY_FUNCTION_PREFIX)){
                 __currentCmd = c;
             }
         }
 
         this.__pushCmd = function(cmd){
-            if(cmd && !cmd.cmdType.startsWith("__")){
+            if(cmd && !cmd.cmdType.startsWith(UTILITY_FUNCTION_PREFIX)){
                 currentBlock.push(cmd);
                 __lastCmd = cmd;
             }
