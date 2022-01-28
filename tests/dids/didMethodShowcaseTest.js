@@ -36,21 +36,24 @@ let mockPersistence = {
 }
 
 svd.setDIDResolver(function(did){
+    function hashFunction(obj){
+        return "#"+obj["#"];
+    }
+
     return {
-        sign: function(hashOfdataToBeSigned){
-            return JSON.stringify({"signedBy":did, hash:hashOfdataToBeSigned});
+        sign: function(o, timeStamp){
+            let hashOfDataToBeSigned = hashFunction(o);
+            return JSON.stringify({"signedBy":did, hash:hashOfDataToBeSigned});
         },
-        verify: function(hashOfdataToBeSigned,signature){
-            //console.log("!!!!!", did, hashOfdataToBeSigned,signature)
+        verify: function(o,signature){
+            let hashOfDataToBeSigned = hashFunction(o);
             let s = JSON.parse(signature);
-            if(s.signedBy !== did || s.hash !== hashOfdataToBeSigned){
+            if(s.signedBy !== did || s.hash !== hashOfDataToBeSigned){
                 return false;
             }
             return true;
         },
-        hash: function(data){
-            return "#"+data["#"];
-        }
+        hash: hashFunction
     }
 })
 
@@ -101,9 +104,10 @@ svd.register('JSMicroLedger', 'DIDMethodDemo', {
 }, mockPersistence);
 
 let keyDID1             = "did:key:key1";
+let keyDID2             = "did:key:key2";
 let recoveryKeyDID1     = "did:key:rkey1";
 let recoveryKeyDID2     = "did:key:rkey2";
-let keyDID2             = "did:key:key2";
+
 
 let did_v1 = svd.create('DIDMethodDemo', keyDID1, keyDID1);
 did_v1.setRecoveryDID(recoveryKeyDID1);
@@ -113,7 +117,7 @@ did_v1.save();
 console.log("First DUMP:", did_v1.getID(), "  has state ", did_v1.dump()," and ", did_v1.history(true));
 
 let did_v2 = svd.load('DIDMethodDemo',  recoveryKeyDID1, keyDID1);
-did_v2.rotate(recoveryKeyDID2);
+did_v2.rotate(keyDID2);
 did_v2.setRecoveryDID(recoveryKeyDID2);
 did_v2.save();
 console.log("Second DUMP:", did_v2.getID(), " has state", did_v2.dump(), " and ", did_v2.history(true));

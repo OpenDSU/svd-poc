@@ -2,7 +2,9 @@ module.exports.enhance = function(host, description){
 
     function createCommandFunction(fn, f){
         function pushCmd(args){
-            let cmd = {cmdType:fn, cmdArgs:args};
+            let t = new Date()
+            let utc = (t.getTime() + t.getTimezoneOffset()*60*1000);
+            let cmd = {cmdType:fn, cmdArgs:args, UTCTimestamp:utc};
             host.__chainCommand(cmd);
             host.__pushCmd(cmd);
             return cmd;
@@ -40,5 +42,4 @@ module.exports.enhance = function(host, description){
 
     let mixin = require("../interfaces/svdMixin");
     mixin.svdMixin(this);
-
 }

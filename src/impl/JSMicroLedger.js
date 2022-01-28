@@ -134,7 +134,7 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             }
 
             c["#"] =  c.hashPrevCmd === "none"? 1 : __lastCmd["#"] + 1;
-            let sign = currentIdentity.sign(currentIdentity.hash(c));
+            let sign = currentIdentity.sign(currentIdentity.hash(c), c.UTCTimestamp);
             c.signature  = sign;
         }
 
