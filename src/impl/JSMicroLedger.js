@@ -1,7 +1,7 @@
 const UTILITY_FUNCTION_PREFIX = "$";
 
 module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence){
-    return function(resolver, asDID, svdID){
+    return function(resolver, asDID, svdID, scVersion){
         let currentIdentity = resolver(asDID);
         let currentBlock = [];
         let self = this;
@@ -36,9 +36,6 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
                 __cmndsHistory.forEach(block => {
                     res += "\tCommand#" + blockNumber ;
                     res +=  JSON.stringify(block, null, " \t");
-                    /*if(block) block.forEach(cmd => {
-                        res += JSON.stringify(cmd, null, '\t') + "\n";
-                    })*/
                     res +="\n"
                     blockNumber++;
                 })
@@ -56,18 +53,19 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             return asDID;
         }
 
-        function verifyForDID(did, cmd, cmdSignature){
+        async function verifyForDID(did, cmd, cmdSignature){
             let didDoc = resolver(did);
-            return didDoc.verify(didDoc.hash(cmd), cmdSignature);
+            return await didDoc.verify(cmd, cmdSignature);
         }
 
-        this.callSignedBy = function(did){
+        this.callSignedBy = async function(did){
             let cloneCmd = JSON.parse(JSON.stringify(__currentCmd));
             let cmdSignature = cloneCmd.signature;
             delete cloneCmd.signature;
-            if(!verifyForDID(did, cloneCmd, cmdSignature)){
-
-                throw new Error("Signature verification failed checking signature of "  + did);
+            let isVerified = await verifyForDID(did, cloneCmd, cmdSignature);
+            if(!isVerified){
+               // console.log("XXX>>", did, __currentCmd,  isVerified, "\n");
+                throw new Error("Signature verification failed checking signature of "  + did + " and singature " + cmdSignature);
             };
         }
 
@@ -78,7 +76,6 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             let anyVerified = false;
             for(let i = 0; i < arr.length; i++){
                 anyVerified = verifyForDID(arr[i], cloneCmd, cmdSignature);
-                //console.log(">>>>>>>>",anyVerified, arr[i], "#"+cloneCmd["#"], cmdSignature);
                 if(anyVerified) return true;
             }
 
@@ -96,12 +93,12 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             return __replayMode;
         }
 
-        this._onNewSVD =  function(){
+        this._onNewSVD =  async function(...args){
             __replayMode = false;
-            this.ctor(asDID, svdID);
+            await this.ctor(asDID, svdID,scVersion, ...args);
         }
 
-        this._onLoadSVD =  function(){
+        this._onLoadSVD =  async function(){
             persistence.loadCommands(svdID, (err, cmnds) => {
                 __cmndsHistory = cmnds;
                 __replayMode = true;
@@ -115,8 +112,8 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
 
                 if(currentBlock.length >0) {
                     /* maybe new commands were issued before initialisation */
-                    currentBlock.forEach( c => {
-                        self.__chainCommand(c);
+                    currentBlock.forEach( async c => {
+                        await self.__chainCommand(c);
                         self[c.cmdType](...c.cmdArgs);
                         __lastCmd = c;
                     })
@@ -126,7 +123,7 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
         }
 
         /* add previous hash and sign. Add "#" property for debug and testing purposes */
-        this.__chainCommand = function(c){
+        this.__chainCommand = async function(c){
             if(__lastCmd){
                 c.hashPrevCmd = currentIdentity.hash(__lastCmd);
             } else {
@@ -134,7 +131,7 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             }
 
             c["#"] =  c.hashPrevCmd === "none"? 1 : __lastCmd["#"] + 1;
-            let sign = currentIdentity.sign(currentIdentity.hash(c), c.UTCTimestamp);
+            let sign = await currentIdentity.sign(c, c.UTCTimestamp);
             c.signature  = sign;
         }
 

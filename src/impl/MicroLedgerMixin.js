@@ -1,27 +1,27 @@
 module.exports.enhance = function(host, description){
 
     function createCommandFunction(fn, f){
-        function pushCmd(args){
+        async function pushCmd(args){
             let t = new Date()
             let utc = (t.getTime() + t.getTimezoneOffset()*60*1000);
             let cmd = {cmdType:fn, cmdArgs:args, UTCTimestamp:utc};
-            host.__chainCommand(cmd);
+            await host.__chainCommand(cmd);
             host.__pushCmd(cmd);
             return cmd;
         }
 
-        return function(...args){
+        return async function(...args){
             let result;
             if(host.__getReplayMode() === "notInitialised"){
-                pushCmd(args);
+                await pushCmd(args);
             }
             else {
                 if(host.__getReplayMode()){
                     f(...args);
                 } else {
-                    host.__setCurrentCmd(pushCmd(args))
+                    host.__setCurrentCmd(await pushCmd(args))
                     try{
-                        result=  f(...args);
+                        result = await f(...args);
                     } catch(err){
                         console.log("Unexpected error", err);
                     }
@@ -34,7 +34,7 @@ module.exports.enhance = function(host, description){
 
     for(let fn in description){
         if(typeof host[fn] === "undefined"){
-            host[fn] = createCommandFunction(fn, description[fn].bind(host));
+            host[fn] =  createCommandFunction(fn, description[fn].bind(host));
         } else {
             throw "Refusing to overwrite member " + fn + " from description. SVD type ducking failed!";
         }
