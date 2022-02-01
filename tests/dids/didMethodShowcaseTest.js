@@ -44,11 +44,11 @@ svd.setDIDResolver(function(did){
     return {
         sign: async function(o, timeStamp){
             let hashOfDataToBeSigned = hashFunction(o);
-            console.log(">>>" + did + " signing " + hashOfDataToBeSigned  + " " + o.cmdType);
             let s = JSON.stringify({"signedBy":did, hash:hashOfDataToBeSigned});
             return s;
         },
         verify: async function(o,signature){
+            console.log("\t\t\t" + did + " verifying " + o["#"]  + "  and commandType " + o.cmdType);
             let hashOfDataToBeSigned = hashFunction(o);
             let s = JSON.parse(signature);
             if(s.signedBy !== did || s.hash !== hashOfDataToBeSigned){
@@ -108,7 +108,7 @@ svd.register('JSMicroLedger', 'DIDMethodDemo', {
 }, mockPersistence);
 
 
-let openDSUDid             = "did:ssi:opendsudidexample";
+let openDSUDid          = "did:ssi:opendsudidexample";
 
 let keyDID1             = "did:key:key1";
 let keyDID2             = "did:key:key2";
@@ -116,25 +116,27 @@ let recoveryKeyDID1     = "did:key:rkey1";
 let recoveryKeyDID2     = "did:key:rkey2";
 
 async function runTest(){
-    let did_v1 = await svd.create('DIDMethodDemo', keyDID1, openDSUDid,"scv.0.1");
-    await did_v1.setRecoveryDID(recoveryKeyDID1);
+
+    console.log(">>>>>>>>>>>>>>>>>> 1");
+    let did_v1 = await svd.create('DIDMethodDemo', keyDID1, openDSUDid,"scv.0.1");  //#1
+    await did_v1.setRecoveryDID(recoveryKeyDID1);    //#2
     console.log("DID used for verifying a good signature should return true and returns:", await did_v1.$verify("testData", await did_v1.$sign("testData")));
     console.log("DID used for verifying a wrong signature should return false and returns:", await did_v1.$verify("testData", await did_v1.$sign("testData1")));
     did_v1.save();
 
     console.log("First DUMP:", did_v1.getID(), "  has state ", did_v1.dump()," and ", did_v1.history(true));
-
+    console.log(">>>>>>>>>>>>>>>>>> 2");
     let did_v2 = await svd.load('DIDMethodDemo',  recoveryKeyDID1, openDSUDid);
-    await did_v2.rotate(keyDID2);
-    await did_v2.setRecoveryDID(recoveryKeyDID2);
+    await did_v2.rotate(keyDID2); //#3
+    await did_v2.setRecoveryDID(recoveryKeyDID2);  //#4
     did_v2.save();
     console.log("Second DUMP:", did_v2.getID(), " has state", did_v2.dump(), " and ", did_v2.history(true));
 
-
+   console.log(">>>>>>>>>>>>>>>>>> 3");
     let did_v3 = await svd.load('DIDMethodDemo',  recoveryKeyDID2, openDSUDid);
-    await did_v3.revoke();
+    await did_v3.revoke();   //#4
     did_v3.save();
-    console.log("Third DUMP:", did_v3.getID(), " has state", did_v3.dump(), " and ", did_v3.history(true));
+    //console.log("Third DUMP:", did_v3.getID(), " has state", did_v3.dump(), " and ", did_v3.history(true));
 
 //console.log(did_v3.$verify("testData", did_v3.$sign("testData")));
 }

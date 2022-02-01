@@ -12,7 +12,6 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
 
         /* -------------------------------------------- Public methods that have to be documented --------------------------------------------*/
         this.save = function(){
-
             currentBlock.forEach( c => {
                 __cmndsHistory.push(c);
             })
@@ -59,13 +58,13 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
         }
 
         this.callSignedBy = async function(did){
+             //console.log("XXX>>", did, __currentCmd);
             let cloneCmd = JSON.parse(JSON.stringify(__currentCmd));
             let cmdSignature = cloneCmd.signature;
             delete cloneCmd.signature;
             let isVerified = await verifyForDID(did, cloneCmd, cmdSignature);
             if(!isVerified){
-               // console.log("XXX>>", did, __currentCmd,  isVerified, "\n");
-                throw new Error("Signature verification failed checking signature of "  + did + " and singature " + cmdSignature);
+                throw new Error("Signature verification failed checking signature of "  + did + " and signature " + cmdSignature);
             };
         }
 
@@ -94,32 +93,54 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
         }
 
         this._onNewSVD =  async function(...args){
-            __replayMode = false;
+            __replayMode = "normalExecution";
             await this.ctor(asDID, svdID,scVersion, ...args);
         }
 
         this._onLoadSVD =  async function(){
-            persistence.loadCommands(svdID, (err, cmnds) => {
+            let endWaiting;
+            let pendingCounter = 0;
+
+            async function doExecution(cmd){
+                let vsdPhaseCommand = self.__setCurrentCmd(cmd);
+                if(vsdPhaseCommand) console.log("\t\tBegin:", cmd.cmdType);
+                try{
+                    await self.__svdDescription[cmd.cmdType](...cmd.cmdArgs);
+                } catch(err){
+                    console.log("UNEXPECTED  ERROR  (SVD phase code got IGNORED after error):", err);
+                }
+                self.__setCurrentCmd(null);
+                __lastCmd = cmd;
+                if(vsdPhaseCommand) console.log("\t\tEnd:", cmd.cmdType);
+            }
+
+            let ret = new Promise((resolve, reject) => {
+                endWaiting = resolve;
+            });
+
+            persistence.loadCommands(svdID, async (err, cmnds) => {
                 __cmndsHistory = cmnds;
-                __replayMode = true;
+                __replayMode = "replay";
+
                 if(cmnds.length >0){
-                    cmnds.forEach( c => {
-                        self.__setCurrentCmd(c);
-                        self[c.cmdType](...c.cmdArgs);
-                        __lastCmd = c;
-                    })
+                    for(let cn in cmnds) {
+                        console.log("\tReplay command:", cmnds[cn].cmdType);
+                        await doExecution(cmnds[cn]);
+                    }
                 }
 
                 if(currentBlock.length >0) {
                     /* maybe new commands were issued before initialisation */
-                    currentBlock.forEach( async c => {
-                        await self.__chainCommand(c);
-                        self[c.cmdType](...c.cmdArgs);
-                        __lastCmd = c;
-                    })
+                    for(let c in currentBlock){
+                        self.__chainCommand(c);
+                        await doExecution(c);
+                    }
                 }
-                __replayMode = false;
+                endWaiting(true);
+                __replayMode = "normalExecution";
+                console.log("END Replay ");
             });
+            return await ret;
         }
 
         /* add previous hash and sign. Add "#" property for debug and testing purposes */
@@ -131,21 +152,30 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             }
 
             c["#"] =  c.hashPrevCmd === "none"? 1 : __lastCmd["#"] + 1;
+
+            if(typeof c.signature !== "undefined"){
+                throw new Error("Can't sign an already signed command!");
+            }
             let sign = await currentIdentity.sign(c, c.UTCTimestamp);
             c.signature  = sign;
         }
 
         this.__setCurrentCmd = function(c){
-            if(c && !c.cmdType.startsWith(UTILITY_FUNCTION_PREFIX)){
-                __currentCmd = c;
+            if(c !== null) {
+                if(__currentCmd != null) {
+                    throw  new Error("Reentrant execution of the VSD methods is not allowed. Executing " +  __currentCmd.cmdType + " while " + c.cmdType + " started");
+                }
             }
+            __currentCmd = c;
+            return true;
         }
 
         this.__pushCmd = function(cmd){
             if(cmd && !cmd.cmdType.startsWith(UTILITY_FUNCTION_PREFIX)){
                 currentBlock.push(cmd);
-                __lastCmd = cmd;
+                return true;
             }
+            return false;
         }
 
         let mixin = require("./MicroLedgerMixin.js");
