@@ -145,7 +145,6 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
 
         /* add previous hash and sign. Add "#" property for debug and testing purposes */
         this.__chainCommand = async function(c){
-            console.log("ChainCommand:", c.cmdType, __lastCmd === null ? "null" : __lastCmd.cmdType);
             if(__lastCmd){
                 c.hashPrevCmd = currentIdentity.hash(__lastCmd);
             } else {
@@ -162,7 +161,6 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
         }
 
         this.__setCurrentCmd = function(cmd, lastCmd){
-            //console.log(">>>>>>>> Setting current cmd", cmd?cmd.cmdType:"NULL >>>>>>>>");
             if(cmd !== null) {
                 if(__currentCmd != null) {
                     throw  new Error("Reentrant execution of the VSD methods is not allowed. Executing " +  __currentCmd.cmdType + " while " + cmd.cmdType + " started");

@@ -115,8 +115,6 @@ let recoveryKeyDID1     = "did:key:rkey1";
 let recoveryKeyDID2     = "did:key:rkey2";
 
 async function runTest(){
-
-
     let did_v1 = await svd.create('DIDMethodDemo', keyDID1, openDSUDid,"scv.0.1");  //#1
     await did_v1.setRecoveryDID(recoveryKeyDID1);    //#2
     console.log("DID used for verifying a good signature should return true and returns:", await did_v1.$verify("testData", await did_v1.$sign("testData")));
@@ -133,11 +131,15 @@ async function runTest(){
 
 
     let did_v3 = await svd.load('DIDMethodDemo',  recoveryKeyDID2, openDSUDid);
-    await did_v3.revoke();   //#4
+    await did_v3.revoke();   //#5
     did_v3.save();
     console.log("Third DUMP:", did_v3.getID(), " has state", did_v3.dump(), " and ", did_v3.history(true));
 
-//console.log(did_v3.$verify("testData", did_v3.$sign("testData")));
+    try{
+        console.log(await did_v3.$verify("testData", await did_v3.$sign("testData")));
+    } catch(err){
+        console.log("Throws as expected");
+    }
 }
 
 runTest();
