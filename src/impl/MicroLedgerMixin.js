@@ -1,6 +1,6 @@
 module.exports.enhance = function(host, description){
 
-    function createCommandFunction(fn, f) {
+    function createDirectCommandFunction(fn, f) {
         async function pushCmd(args) {
             let t = new Date()
             let utc = (t.getTime() + t.getTimezoneOffset() * 60 * 1000);
@@ -19,16 +19,24 @@ module.exports.enhance = function(host, description){
                 cmd = await pushCmd(args);
                 host.__setCurrentCmd(cmd);
                 result = await f(...args);
-                host.__setCurrentCmd(null);
+                host.__setCurrentCmd(null, cmd);
             }
             return result;
         }
     }
 
-     host.__svdDescription = description;
+    function createReplayCommandFunction(fn, f) {
+        return async function(...args){
+          //  console.log("Replaying... ", fn, new Error("execution"));
+            let result = await f(...args);
+            return result;
+        }
+    }
+
+     host.__svdReplayFunctions = {};
     for(let fn in description){
         if(typeof host[fn] === "undefined"){
-            host.__svdDescription[fn] =  description[fn].bind(host);
+            host.__svdReplayFunctions[fn] =  createReplayCommandFunction(fn, description[fn].bind(host));
         } else {
             throw "Refusing to overwrite member " + fn + " from description. SVD type ducking failed!";
         }
@@ -36,7 +44,7 @@ module.exports.enhance = function(host, description){
 
     for(let fn in description){
         if(typeof host[fn] === "undefined"){
-            host[fn] =  createCommandFunction(fn, description[fn].bind(host));
+            host[fn] =  createDirectCommandFunction(fn, description[fn].bind(host));
         } else {
             throw "Refusing to overwrite member " + fn + " from description. SVD type ducking failed!";
         }
