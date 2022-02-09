@@ -1,13 +1,12 @@
-function SVDContext(asDID ){
+function SVDContext(asDID, resolverFunction ){
     let svdPrototypeRegistry = {};
     let svdTypesRegistry = {};
-    let globalDIDResolver;
 
     this.registerPrototype = function(svdPrototypeName, protoCtor, persistenceImpl){
         svdPrototypeRegistry[svdPrototypeName] = { protoCtor, persistenceImpl};
     }
 
-    this.register = function(svdTypeName, description, svdPrototypeName){
+    this.registerType = function(svdTypeName, description, svdPrototypeName){
         let protoInfo = svdPrototypeRegistry[svdPrototypeName];
         if(!protoInfo || typeof protoInfo.protoCtor !== "function"){
             throw "Failed to lookup for  svd prototype " + svdPrototypeName + " while creating SVD type " +  svdTypeName;
@@ -21,33 +20,31 @@ function SVDContext(asDID ){
         if(typeof ctor !== "function"){
             throw "Failed to create a new ctor with SVD type " + svdTypeName;
         }
-        let svd = new ctor( globalDIDResolver, asDID, svdID,scVersion, ...args);
+        let svd = new ctor( resolverFunction, asDID, svdID,scVersion, ...args);
         await svd._onNewSVD(...args);
         return svd;
     }
 
     this.setDIDResolver = function(resolver){
-        globalDIDResolver = resolver;
+        resolverFunction = resolver;
     }
 
-    this.load = async function(svdIdentity){
+    this.load = async function(svdIdentity, ...args){
         let protoName;
         for(protoName in svdPrototypeRegistry){
             let p = svdPrototypeRegistry[protoName];
-            if(p.hasSVD(svdIdentity)){
-                return p.load(svdIdentity);
+            let typeName = p.detectTypeName(svdIdentity)
+            if(p){
+                let ctor = svdTypesRegistry[typeName];
+                if(typeof ctor !== "function"){
+                    throw "Failed to create a new ctor with SVD type  " + typeName;
+                }
+                let svd = new ctor(resolverFunction, asDID, svdIdentity);
+                await svd._onLoadSVD(...args);
+                return svd;
             }
         }
         return null;
-        /*
-        let ctor = svdRegistry[svdName];
-        if(typeof ctor !== "function"){
-            throw "Failed to create a new ctor with SVD type  " + svdName;
-        }
-        let svd = new ctor(globalDIDResolver, asDID, svdID);
-        await svd._onLoadSVD(...args);
-        return svd;
-         */
     },
 
     this.registerSwarmEngine = function(swarmEngine){
@@ -69,8 +66,8 @@ function SVDContext(asDID ){
 
 
 module.exports = {
-    createSVDContext:function(did, persistenceImpl){
-        return new SVDContext(did, persistenceImpl);
+    createSVDContext:function(did, resolverFunction){
+        return new SVDContext(did, resolverFunction);
     }
 }
 
