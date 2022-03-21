@@ -2,7 +2,7 @@
 let __memoryPersistence = {};
 
 let mixin = {
-    detectTypeName: function(svdIdentity){
+    detectTypeName: function(svdIdentity, callback){
         return null;
     },
     loadCommands: function(svdIdentity, callback) {
@@ -36,6 +36,6 @@ let mixin = {
 };
 
 module.exports.applyMixin = function(host){
-    let applyMixin = require("./Mixin.js").applyMixin;
+    let applyMixin = require("../util/Mixin.js").applyMixin;
     applyMixin(host, mixin)
 }

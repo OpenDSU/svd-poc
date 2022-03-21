@@ -18,6 +18,6 @@ let mixin = {
 };
 
 module.exports.svdMixin = function(host){
-    let applyMixin = require("./Mixin.js").applyMixin;
+    let applyMixin = require("../util/Mixin.js").applyMixin;
     applyMixin(host, mixin);
 }

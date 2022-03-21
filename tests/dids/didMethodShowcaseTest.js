@@ -69,7 +69,7 @@ ctxt4.registerType('DIDMethodDemo',  didMethodDescription, 'JSMicroLedger' );
 
 
 async function runTest(){
-    let did_v1 = await ctxt1.create('DIDMethodDemo', openDSUDid,"scv.0.1");  //#1
+    let did_v1 = await ctxt1.create(openDSUDid, 'DIDMethodDemo');  //#1
     await did_v1.setRecoveryDID(recoveryKeyDID1);    //#2
     console.log("DID used for verifying a good signature should return true and returns:", await did_v1.$verify("testData", await did_v1.$sign("testData")));
     console.log("DID used for verifying a wrong signature should return false and returns:", await did_v1.$verify("testData", await did_v1.$sign("testData1")));

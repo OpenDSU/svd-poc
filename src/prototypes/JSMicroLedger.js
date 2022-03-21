@@ -60,14 +60,14 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
         this.callSignedBy = async function(did){
             if(__currentCmd === null){
                 throw new Error("THis function can be called only from SVD phases ");
-            };
+            }
             let cloneCmd = JSON.parse(JSON.stringify(__currentCmd));
             let cmdSignature = cloneCmd.signature;
             delete cloneCmd.signature;
             let isVerified = await verifyForDID(did, cloneCmd, cmdSignature);
             if(!isVerified){
                 throw new Error("Signature verification failed checking signature of "  + did + " and signature " + cmdSignature);
-            };
+            }
         }
 
         this.callSignedByAny = function(arr){
@@ -82,7 +82,7 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
 
             if(!anyVerified){
                 throw new Error("Signature verification failed checking signature of any did in the list: "  + arr);
-            };
+            }
         }
 
         this.resolveDID = function(did){
@@ -117,7 +117,7 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             }
             let ret = new Promise((resolve, reject) => {
                 endWaiting = resolve;
-            });
+            })
 
             persistence.loadCommands(svdID, async (err, cmnds) => {
                 __cmndsHistory = cmnds;
@@ -160,6 +160,10 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             c.signature  = sign;
         }
 
+        /**
+         * @param {null} cmd
+         * @param {null} lastCmd
+         */
         this.__setCurrentCmd = function(cmd, lastCmd){
             if(cmd !== null) {
                 if(__currentCmd != null) {

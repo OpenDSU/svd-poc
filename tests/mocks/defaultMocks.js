@@ -25,7 +25,7 @@ function didResolver(did) {
 let svdModule = require("../../src/index");
 
 module.exports.createTestContext = function(did){
-    let JSMicroLedgerProtoCtor = require("../../src/impl/JSMicroLedger").JSMicroLedgerProtoCtor;
+    let JSMicroLedgerProtoCtor = require("../../src/prototypes/JSMicroLedger").JSMicroLedgerProtoCtor;
     let persistenceMixin = require("../../src/interfaces/persistenceMixin").applyMixin;
     let memoryPersistence = {};
     persistenceMixin(memoryPersistence);

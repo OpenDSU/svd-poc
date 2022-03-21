@@ -35,24 +35,6 @@ let mockPersistence = {
     }
 }
 
-svd.setDIDResolver(function(did){
-    return {
-        sign: function(hashOfdataToBeSigned){
-            return JSON.stringify({"signedBy":did, hash:hashOfdataToBeSigned});
-        },
-        verify: function(hashOfdataToBeSigned,signature){
-            let s = JSON.parse(signature);
-            if(s.signedBy != did || s.hash != hashOfdataToBeSigned){
-                return false;
-            };
-            return true;
-        },
-        hash: function(data){
-            return "#"+data["#"];
-        }
-    }
-})
-
 
 /********************************* Actual code ***********************************/
 

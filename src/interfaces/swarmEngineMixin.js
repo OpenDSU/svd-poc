@@ -8,6 +8,6 @@ let mixin = {
 };
 
 module.exports.applyMixin = function(host){
-    let applyMixin = require("./Mixin.js").applyMixin;
+    let applyMixin = require("../util/Mixin.js").applyMixin;
 
 }

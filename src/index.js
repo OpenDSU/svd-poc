@@ -1,7 +1,7 @@
 
 
  let thisModule = {
-     createSVDContext : require("./SVDContext").createSVDContext
+     createSVDContext : require("./core/SVDContext").createSVDContext
 }
 
 module.exports = thisModule;
