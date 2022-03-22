@@ -26,12 +26,22 @@ let svdModule = require("../../src/index");
 
 module.exports.createTestContext = function(did){
     let JSMicroLedgerProtoCtor = require("../../src/prototypes/JSMicroLedger").JSMicroLedgerProtoCtor;
+
+    let swarmProtoCtor = require("../../src/prototypes/SwarmMicroLedger").SwarmMicroLedgerProtoCtor;
+
     let persistenceMixin = require("../../src/interfaces/persistenceMixin").applyMixin;
+
     let memoryPersistence = {};
     persistenceMixin(memoryPersistence);
 
+    let swarmEngine = {
+
+    };
+
+
     let ctxt = svdModule.createSVDContext(did, didResolver);
-    ctxt.registerPrototype("JSMicroLedger", JSMicroLedgerProtoCtor,memoryPersistence, "json");
+    ctxt.registerPrototype("JSMicroLedger", JSMicroLedgerProtoCtor, memoryPersistence, "json");
+    ctxt.registerPrototype("SwarmMicroLedger", swarmProtoCtor,swarmEngine, "swarm");
     return ctxt;
 }
 

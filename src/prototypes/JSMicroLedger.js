@@ -75,7 +75,11 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             }
         }
 
+
         this.callSignedByAny = function(arr){
+            if(typeof arr == "string"){
+                arr = [arr];
+            }
             let cloneCmd = JSON.parse(JSON.stringify(__currentCmd));
             let cmdSignature = cloneCmd.signature;
             delete cloneCmd.signature;
@@ -89,6 +93,8 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
                 throw new Error("Signature verification failed checking signature of any did in the list: "  + arr);
             }
         }
+
+        this.validateCaller = this.callSignedByAny;
 
         this.resolveDID = function(did){
             return resolver(did);
@@ -104,9 +110,17 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             await self.ctor(asDID, svdID,scVersion, ...args);
         }
 
-        this._onLoadSVD =  async function(){
+        this._onLoadSVD =  async function(fromCommands){
             let endWaiting;
             let pendingCounter = 0;
+
+            async function loadCommands(callback){
+                if(fromCommands === undefined && persistence){
+                    persistence.loadCommands(svdID.getIdentifier(), callback);
+                } else {
+                    await callback(undefined, fromCommands);
+                }
+            }
 
             async function doReplayExecution(cmd){
                 let vsdPhaseCommand = self.__setCurrentCmd(cmd);
@@ -120,11 +134,13 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
                 self.__setCurrentCmd(null, cmd);
 
             }
+
             let ret = new Promise((resolve, reject) => {
                 endWaiting = resolve;
             })
 
-            persistence.loadCommands(svdID.getIdentifier(), async (err, cmnds) => {
+
+            await loadCommands(async (err, cmnds) => {
                 __cmndsHistory = cmnds;
                 __replayMode = "replay";
 

@@ -60,16 +60,16 @@ let didMethodDescription =  {
     },
 };
 
-ctxt1.registerType('DIDMethodDemo',  didMethodDescription, 'JSMicroLedger' );
-ctxt2.registerType('DIDMethodDemo',  didMethodDescription, 'JSMicroLedger' );
-ctxt3.registerType('DIDMethodDemo',  didMethodDescription, 'JSMicroLedger' );
-ctxt4.registerType('DIDMethodDemo',  didMethodDescription, 'JSMicroLedger' );
+ctxt1.registerType('DIDMethodDemo',  didMethodDescription, 'JSMicroLedger' , 1);
+ctxt2.registerType('DIDMethodDemo',  didMethodDescription, 'JSMicroLedger' , 1);
+ctxt3.registerType('DIDMethodDemo',  didMethodDescription, 'JSMicroLedger' , 1);
+ctxt4.registerType('DIDMethodDemo',  didMethodDescription, 'JSMicroLedger' , 1);
 
 /********************************* Actual code ***********************************/
 
 
 async function runTest(){
-    let did_v1 = await ctxt1.create(openDSUDid, 'DIDMethodDemo', 1);  //#1
+    let did_v1 = await ctxt1.create(openDSUDid, 'DIDMethodDemo');  //#1
     let svdId = did_v1.getSVDID();
     await did_v1.setRecoveryDID(recoveryKeyDID1);    //#2
     console.log("DID used for verifying a good signature should return true and returns:", await did_v1.$verify("testData", await did_v1.$sign("testData")));
@@ -78,14 +78,14 @@ async function runTest(){
 
     console.log("First DUMP:", did_v1.getSVDID(), "  has state ", did_v1.dump()," and ", did_v1.history(true));
 
-    let did_v2 = await ctxt3.load(svdId, openDSUDid);
+    let did_v2 = await ctxt3.load(svdId);
     await did_v2.rotate(keyDID2); //#3
     await did_v2.setRecoveryDID(recoveryKeyDID2);  //#4
     did_v2.save();
     console.log("Second DUMP:", did_v2.getSVDID(), " has state", did_v2.dump(), " and ", did_v2.history(true));
 
 
-    let did_v3 = await ctxt4.load(svdId,  openDSUDid);
+    let did_v3 = await ctxt4.load(svdId);
     await did_v3.revoke();   //#5
     did_v3.save();
     console.log("Third DUMP:", did_v3.getSVDID(), " has state", did_v3.dump(), " and ", did_v3.history(true));
