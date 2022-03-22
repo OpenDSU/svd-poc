@@ -1,5 +1,7 @@
 const UTILITY_FUNCTION_PREFIX = "$";
 
+let parseSVDIdentifier = require("../util/SVDIdentifier").parseSVDIdentifier;
+
 module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence){
     return function(resolver, asDID, svdID, scVersion){
         let currentIdentity = resolver(asDID);
@@ -10,13 +12,16 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
         let __currentCmd = null;
         let __cmndsHistory = [];
 
+        if(typeof svdID == "string"){
+            svdID = parseSVDIdentifier(svdID);
+        }
         /* -------------------------------------------- Public methods that have to be documented --------------------------------------------*/
         this.save = function(){
             currentBlock.forEach( c => {
                 __cmndsHistory.push(c);
             })
 
-            persistence.addBlock(svdID, currentBlock, (err, res) => {
+            persistence.addBlock(svdID.getIdentifier(), currentBlock, (err, res) => {
                 if(err) {
                     throw err;
                 }
@@ -44,8 +49,8 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
             return JSON.stringify(__cmndsHistory);
         }
 
-        this.getID = function(){
-            return svdID;
+        this.getSVDID = function(){
+            return svdID.getIdentifier();
         }
 
         this.getCurrentControllerDID = function(){
@@ -119,7 +124,7 @@ module.exports.JSMicroLedgerProtoCtor = function(name, description, persistence)
                 endWaiting = resolve;
             })
 
-            persistence.loadCommands(svdID, async (err, cmnds) => {
+            persistence.loadCommands(svdID.getIdentifier(), async (err, cmnds) => {
                 __cmndsHistory = cmnds;
                 __replayMode = "replay";
 

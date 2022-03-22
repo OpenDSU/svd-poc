@@ -15,8 +15,8 @@ function SVDIdentifier(str){
 
     if(str !== undefined && str !== ""){
         const fields = str.split(":");
-        if(fields.length != 5){
-            throw new Error("Invalid SVD identifier, it should be in this form 'svd:contextType:prototype:type:version:instanceIdentifier', received " + str);
+        if(fields.length != 6){
+            throw new Error("Invalid SVD identifier, it should be in this form 'svd:contextType:prototype:type:version:instanceIdentifier', received: " + str);
         }
 
         contextType = fields[1];
@@ -28,6 +28,7 @@ function SVDIdentifier(str){
 
     this.setFields = function(contextType,protoType, customType, version, uniqID ){
         str = `svd:${contextType}:${protoType}:${customType}:${version}:${uniqID}`;
+        console.log("Seting SVDIdentity ", str)
     }
 
     this.getFields = function( ){
@@ -36,11 +37,8 @@ function SVDIdentifier(str){
             }
     }
 
-    this.getField = function(fieldName ){
-        let fields = {
-            contextType,protoType, customType, version, uniqID
-        }
-        return fields[fieldName];
+    this.getTypeName = function(){
+        return customType;
     }
 
     this.getIdentifier = function(){

@@ -1,15 +1,20 @@
 /* This "interface" demonstrates and documents the expected behaviour, offers also a mock implementation for testing */
 let __memoryPersistence = {};
+let parseSVDIdentifier = require("../util/SVDIdentifier").parseSVDIdentifier;
 
 let mixin = {
     detectTypeName: function(svdIdentity, callback){
-        return null;
+        let svdid = parseSVDIdentifier(svdIdentity);
+        return svdid.getTypeName();
     },
-    loadCommands: function(svdIdentity, callback) {
-        let blocks = __memoryPersistence[svdIdentity];
+    hasSVD:function(svdIdentity){
+        return true;
+    },
+    loadCommands: function(svdId, callback) {
+        let blocks = __memoryPersistence[svdId];
         if(!blocks){
             blocks = [];
-            __memoryPersistence[svdIdentity] = blocks;
+            __memoryPersistence[svdId] = blocks;
         }
 
         let cmnds = [];

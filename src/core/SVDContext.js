@@ -9,25 +9,29 @@ function SVDContext(asDID, resolverFunction ){
         svdPrototypeRegistry[svdPrototypeName] = { protoCtor, persistenceImpl, contextType};
     }
 
-    this.registerType = function(svdTypeName, description, svdPrototypeName){
+    this.registerType = function(svdCustomTypeName, description, svdPrototypeName){
         let protoInfo = svdPrototypeRegistry[svdPrototypeName];
         if(!protoInfo || typeof protoInfo.protoCtor !== "function"){
-            throw "Failed to lookup for  svd prototype " + svdPrototypeName + " while creating SVD type " +  svdTypeName;
+            throw "Failed to lookup for  svd prototype " + svdPrototypeName + " while creating SVD type " +  svdCustomTypeName;
         }
-        svdCustomTypesRegistry[svdTypeName] = protoInfo.protoCtor(svdTypeName, description, protoInfo.persistenceImpl);
+        svdCustomTypesRegistry[svdCustomTypeName] = {
+            ctor:protoInfo.protoCtor(svdCustomTypeName, description, protoInfo.persistenceImpl),
+            protoType: svdPrototypeName
+        };
     }
 
 
     this.create = async function(svdCustomID, svdCustomTypeName, version, ...args){
         let b64CustomID = btoa(svdCustomID);
-        let ctxtTypeName = svdCustomTypesRegistry[svdCustomTypeName].contextType;
-        let protoTypeName = svdCustomTypesRegistry[svdCustomTypeName].contextType;
+        let protoTypeName = svdCustomTypesRegistry[svdCustomTypeName].protoType;
+        let ctxtTypeName = svdPrototypeRegistry[protoTypeName].contextType;
+
         let svdId = utilIdentifier.createSVDIdentifier(ctxtTypeName,protoTypeName,svdCustomTypeName, version, b64CustomID);
 
-        let ctor = svdCustomTypesRegistry[svdCustomTypeName];
+        let ctor = svdCustomTypesRegistry[svdCustomTypeName].ctor;
 
         if(typeof ctor !== "function"){
-            throw "Failed to create a new ctor with SVD type " + svdCustomTypeName;
+            throw new Error("Failed to create a new ctor with SVD type " + svdCustomTypeName);
         }
         let svd = new ctor( resolverFunction, asDID, svdId, ...args);
         await svd._onNewSVD(...args);
@@ -42,19 +46,18 @@ function SVDContext(asDID, resolverFunction ){
         let protoName;
         for(protoName in svdPrototypeRegistry){
             let p = svdPrototypeRegistry[protoName].persistenceImpl;
-            let typeName = p.detectTypeName(svdIdentity)
-            if(p && typeName){
-                let ctor = svdCustomTypesRegistry[typeName].protoCtor;
+            if(p.hasSVD(svdIdentity)){
+                let typeName = p.detectTypeName(svdIdentity)
+                let ctor = svdCustomTypesRegistry[typeName].ctor;
                 if(typeof ctor !== "function"){
-                    throw "Failed to create a new ctor with SVD type  " + typeName;
+                    throw new Error("Failed to create a new ctor with SVD type  " + typeName);
                 }
                 let svd = new ctor(resolverFunction, asDID, svdIdentity);
                 await svd._onLoadSVD(...args);
                 return svd;
-            } else {
-                throw new Error("Failed to load SVD with identity " + svdIdentity + " and detected type " + typeName);
             }
         }
+        throw new Error("Failed to load SVD with identity " + svdIdentity + " and type " + svdIdentity);
         return null;
     }
 

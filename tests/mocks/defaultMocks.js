@@ -31,7 +31,7 @@ module.exports.createTestContext = function(did){
     persistenceMixin(memoryPersistence);
 
     let ctxt = svdModule.createSVDContext(did, didResolver);
-    ctxt.registerPrototype("JSMicroLedger", JSMicroLedgerProtoCtor,memoryPersistence);
+    ctxt.registerPrototype("JSMicroLedger", JSMicroLedgerProtoCtor,memoryPersistence, "json");
     return ctxt;
 }
 
